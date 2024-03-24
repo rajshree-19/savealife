@@ -1,0 +1,612 @@
+import mysql.connector as mc
+#import random
+import matplotlib.pyplot as plt
+mydb1=mc.connect(host='localhost',user='root',passwd='devu1234',database='organ',charset='utf8')
+mydb2=mc.connect(host='localhost',user='root',passwd='devu1234',database='blood_bank',charset='utf8')
+mycursor2=mydb2.cursor()
+mycursor1=mydb1.cursor()
+print("WELCOME TO savealife.org")
+
+def org_donor_data_collection():
+    #ch=input("enter your category(blood/organ):")
+    #if ch=="organ":
+    while True:
+        #reg_no=1
+        name=input('enter your Name:')
+        Aadhar_id=int(input('enter your Aadhar no.:'))
+        age=int(input('enter your Age:'))
+        blood_grp=input('enter your Blood Group:').upper()
+        h=input('any history of hepatitis(yes/no):').lower()
+        aids=input('any history of AIDS(yes/no):').lower()
+        d=input('any history of Diabetes(yes/no):').lower()
+        chl=input('any history of cholestrol(yes/no):').lower()
+        canc=input('any history of cancer(yes/no)').lower()
+        cal=input('any history of chronic alcoholism(yes/no):').lower()
+        cd=input('are you a cardiac patient(yes/no):').lower()
+        org=input('enter your organ for donation:').upper()
+        sts=input('enter the status(alive/deceased):').title()
+        if 'yes' in (h,aids,d,chl,canc,cal,cd):
+            print('SORRY,YOU ARE INELIGIBLE FOR ORGAN DONATION!')
+            ch=input('do you want to continue ?:')
+            if ch in "noNONo":
+                print('Thankyou!')
+                    #return
+                menudrive()
+            else:
+                continue
+        else:
+            mycursor1.execute("select max(Reg_no) from organ_donor") #gives a list of tuple
+            x=mycursor1.fetchall()
+            reg_no=x[0][0]+1
+            mycursor1.execute(f"insert into organ_donor values({reg_no},'{name}','{Aadhar_id}',{age},'{blood_grp}','{sts}','{org}')")
+            mydb1.commit()
+            print('details registered successfully!')
+            cho=input('do you want to register more?(yes/no):')
+            
+            if cho in "noNONo":
+                print('Thankyou for registering')
+                #return
+                menudrive()
+            else:
+                org_donor_data_collection()
+                #continue
+                
+            
+
+
+    
+def org_reciever_data_collection():
+    name=input('enter your Name:')
+    Aadhar_id=int(input('enter your Aadhar no.:'))
+    age=int(input('enter your Age:'))
+    blood_grp=input('enter your Blood Group:').upper()
+    org=input('enter your required organ:').upper()
+            
+    dor=input('enter the date of registration(yy-mm-dd):')
+          
+            
+    mycursor1.execute("select max(Reg_no) from organ_receiver") #gives a list of tuple
+    x=mycursor1.fetchall()
+    reg_no=x[0][0]+1
+    mycursor1.execute(f"insert into organ_receiver values({reg_no},'{name}','{Aadhar_id}',{age},'{blood_grp}','{dor}','{org}')")
+    mydb1.commit()
+    print('details registered successfully!')
+    cho=input('do you want to register more?(yes/no):')
+            #reg_no+=1
+            #mc.close()
+    if cho in "noNONo":
+                #break
+        print('Thankyou for registering')
+        #return
+        menudrive()
+    else:
+        org_reciever_data_collection()
+    
+def org_access_information():
+    #cnt_bg=[]
+    #b_o=input("enter your category for accessing information(blood/organ):")
+    #if b_o.lower()=='organ':
+    mycursor1.execute("select organ,count(*) from organ_donor group by organ")
+    rec_o=mycursor1.fetchall()
+    #for i in rec:    
+    cnt_org=dict(rec_o)
+    orgn=[]
+    cnt=[]
+    for i,j in cnt_org.items():
+        orgn.append(i)
+        cnt.append(j)
+        #print(bg)
+        #print(cnt)
+
+    slices=cnt
+    org_pie=orgn
+    cols=['b','g','r','c','m','y','cyan','lawngreen']
+    plt.pie(slices,labels=org_pie,colors=cols,startangle=90,autopct="%1.1f%%")
+    plt.title("Organ availability")
+    plt.show()
+    return
+    
+
+def org_donor_deletion():
+    del_reg=int(input('enter the register number of the record to be deleted:'))
+    del_aad=input('enter the aadhar number:')
+    #query="delete from blood_donor where Aadhar_id=del_aad"
+    mycursor1.execute(f"delete from organ_donor where Aadhar_id='{del_aad}'")
+    mydb1.commit()
+    print("record deleted")
+
+def organ_donor_updation():
+    upd_reg_no=int(input('enter your registration number for updation of data:'))
+    new_age=int(input('enter new age:'))
+    new_org=input('enter new organ for updation:').upper()
+    stat=input('enter status(alive/deceased):').title()
+    mycursor1.execute(f"update organ_donor set Age={new_age},Organ='{new_org}',Status='{stat}' where Reg_no={upd_reg_no}")
+    mydb1.commit()
+    print("details updated successfully")
+    
+def organ_search():
+    #age=int(input("enter your required age to see the data:"
+    mycursor1.execute("select age,count(*) from organ_donor group by age")
+    rec1=mycursor1.fetchall()
+    mycursor1.execute("select organ,count(*) from organ_donor group by organ")
+    rec2=mycursor1.fetchall()
+    print("Here's the demographic trends related to age ")
+    for i in rec1:
+        print(i)
+
+    print("Here's the demographic trends related to prgans ")
+    for j in rec2:
+        print(j)
+   
+def org_matching():
+    reg=int(input("enter your registration number"))
+    mycursor1.execute(f"select blood_grp,organ_required from organ_receiver where Reg_no={reg}")
+    bg1=mycursor1.fetchall()
+    #mycursor.execute(f"select organ from organ_receiver where Reg_no={reg}")
+
+
+    if bg1[0][0].upper()=="A+":
+        mycursor1.execute("select Reg_no,Name,age,organ from organ_donor where blood_group in ('a+','A+','a-','A-','o+','O+','o-','O-')")
+        a1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in a1:
+            if i[3]==bg1[0][1]:
+                
+                print(i)
+            
+        #print("Here is a list of the compatible pairs")
+        #for line in a1:
+            #print(line)
+
+
+    elif bg1[0][0].upper()=="A-":
+        mycursor1.execute("select Reg_no,Name,Age,Organ from organ_donor where blood_group in ('a-','A-','o-','O-')")
+        b1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in b1:
+            if i[3]==bg1[0][1]:
+                print(i)
+
+    elif bg1[0][0].upper()=="B+":
+        mycursor1.execute("select Reg_no,Name,Age,Organ from organ_donor where blood_group in ('b+','B+','b-','B-','o+','O+','o-','O-')")
+        c1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in c1:
+            if i[3]==bg1[0][1]:
+                print(i)
+
+    elif bg1[0][0].upper()=="B-":
+        mycursor1.execute("select Reg_no,Name,Age,Organ from organ_donor where blood_group in ('b-','B-','o-','O-')")
+        d1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in d1:
+            if i[3]==bg1[0][1]:
+                print(i)
+
+
+    elif bg1[0][0].upper()=="AB+":
+        mycursor1.execute("select Reg_no,Name,Age,Organ from organ_donor")
+        e1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in e1:
+            if i[3]==bg1[0][1]:
+                print(i)
+
+    elif bg1[0][0].upper()=="AB-":
+        mycursor1.execute("select Reg_no,Name,Age,Organ from organ_donor where blood_group in ('a-','A-','o-','O-','b-','B-','ab-','AB-')")
+        f1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in f1:
+            if i[3]==bg1[0][1]:
+                print(i)
+
+
+    elif bg1[0][0].upper()=="O-":
+        mycursor1.execute("select Reg_no,Name,Age,Organ from organ_donor where blood_group in ('o-','O-')")
+        g1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in g1:
+            if i[3]==bg1[0][1]:
+                print(i)
+
+
+    elif bg1[0][0].upper()=="O+":
+        mycursor1.execute("select Reg_no,Name,Age,Organ from organ_donor where blood_group in ['o+','O+','o-','O-']")
+        h1=mycursor1.fetchall()
+        print("Here is a list of the compatible pairs")
+        for i in h1:
+            if i[3]==bg1[0][1]:
+                print(i)
+
+    ch=input("do you want to continue?")
+    if ch in "noNONo":
+        print("thankyou!!")
+        #return
+        menudrive()
+    else:
+        org_matching()
+
+def organ_receiver_updation():
+    upd_reg_no=int(input('enter your registration number for updation of data:'))
+    new_age=int(input('enter new age:'))
+    new_org=input('enter new organ for updation:').upper()
+    #stat=input('enter status(alive/deceased):')
+    mycursor1.execute(f"update organ_receiver set Age={new_age},organ_required='{new_org}' where Reg_no={upd_reg_no}")
+    mydb1.commit()
+    print("details updated successfully")
+
+def org_receiver_deletion():
+    del_reg=int(input('enter the register number of the record to be deleted:'))
+    del_aad=input('enter the aadhar number:')
+    #query="delete from blood_donor where Aadhar_id=del_aad"
+    mycursor1.execute(f"delete from organ_receiver where Aadhar_id='{del_aad}'")
+    mydb1.commit()
+    print("record deleted")
+
+
+def blood_search():
+    #age=int(input("enter your required age to see the data:"
+    mycursor2.execute("select age,count(*) from blood_donor group by Age")
+    rec1=mycursor2.fetchall()
+    mycursor2.execute("select Blood_grp,count(*) from blood_donor group by Blood_grp")
+    rec2=mycursor2.fetchall()
+    print("Here's the demographic trends related to age ")
+    for i in rec1:
+        print(i)
+
+    print("Here's the demographic trends related to blood_group ")
+    for j in rec2:
+        print(j)
+
+ 
+
+
+
+def blood_donor_data_collection():
+    #ch=input("enter your category(blood/organ):")
+    #if ch=="blood":
+    while True:
+        #reg_no=1
+        name=input('enter your Name:')
+        Aadhar_id=int(input('enter your Aadhar no.:'))
+        age=int(input('enter your Age:'))
+        blood_grp=input('enter your Blood Group:').upper()
+        h=input('any history of hepatitis(yes/no):').lower()
+        aids=input('any history of AIDS(yes/no):').lower()
+        d=input('any history of Diabetes(yes/no):').lower()
+        chl=input('any history of cholestrol(yes/no):').lower()
+        canc=input('any history of cancer(yes/no)').lower()
+        cal=input('any history of chronic alcoholism(yes/no):').lower()
+        cd=input('are you a cardiac patient(yes/no):').lower()
+        if 'yes' in (h,aids,d,chl,canc,cal,cd):
+            print('SORRY,YOU ARE INELIGIBLE FOR BLOOD DONATION!')
+            ch=input('do you want to continue ?:')
+            if ch in "noNONo":
+                #break
+                print('Thankyou!!')
+                return
+        else:
+            mycursor2.execute("select max(Reg_no) from blood_donor") #gives a list of tuple
+            x=mycursor2.fetchall()
+            reg_no=x[0][0]+1
+            mycursor2.execute(f"insert into blood_donor values({reg_no},'{name}',{Aadhar_id},{age},'{blood_grp}')")
+            mydb2.commit()
+            print('details registered successfully!')
+            cho=input('do you want to register more?(yes/no):')
+            #reg_no+=1
+            #mc.close()
+            if cho in "noNONo":
+                #break
+                print('Thankyou for registering')
+                #return
+                menudrive()
+            else:
+                blood_donor_data_collection()
+                    #copyright
+
+
+
+def blood_reciever_data_collection():
+    #ch=input("enter your category(blood/organ):")
+    
+    #if ch=="blood":
+    while True:
+        #reg_no=1
+        name=input('enter your Name:')
+        Aadhar_id=input('enter your Aadhar no.:')
+        age=int(input('enter your Age:'))
+        blood_grp=input('enter your Blood Group:').upper()
+        dor=input('enter the date of registration(yy/mm/dd):')
+        while True:
+                mycursor2.execute("select max(Reg_no) from blood_receiver") #gives a list of tuple
+                x=mycursor2.fetchall()
+                reg_no=x[0][0]+1
+                mycursor2.execute(f"insert into blood_receiver values({reg_no},'{name}','{Aadhar_id}',{age},'{blood_grp}','{dor}')")
+                mydb2.commit()
+                print('details registered successfully!')
+                cho=input('do you want to register more?(yes/no):')
+                #reg_no+=1
+                #mc.close()
+                if cho in "noNONo":
+                    #break
+                    print('Thankyou for registering')
+                    #return
+                    menudrive()
+                else:
+                    blood_reciever_data_collection()
+
+
+def blood_access_information():
+    #cnt_bg=[]
+    #b_o=input("enter your category for accessing information(blood/organ):")
+    #if b_o.lower()=='blood':
+    mycursor2.execute("select blood_grp,count(*) from blood_donor group by blood_grp")
+    rec=mycursor2.fetchall()
+    #for i in rec:    
+    cnt_bg=dict(rec)
+    bg=[]
+    cnt=[]
+    for i,j in cnt_bg.items():
+        bg.append(i)
+        cnt.append(j)
+        #print(bg)
+        #print(cnt)
+
+    slices=cnt
+    bg_pie=bg
+    cols=['b','g','r','c','m','y','cyan','lawngreen']
+    plt.pie(slices,labels=bg_pie,colors=cols,startangle=90,shadow=True,autopct="%1.1f%%")
+    plt.title("blood bank")
+    plt.show()
+
+def blood_donor_updation():
+    upd_reg_no=int(input('enter your registration number for updation of data:'))
+    new_data=int(input('enter new data(you can only update your age):'))
+    mycursor2.execute(f"update blood_donor set Age={new_data} where Reg_no={upd_reg_no}")
+    mydb2.commit()
+    print("age updated successfully")
+
+
+
+def blood_donor_deletion():
+    del_reg=int(input('enter the register number of the record to be deleted:'))
+    del_aad=input('enter the aadhar number:')
+    #query="delete from blood_donor where Aadhar_id=del_aad"
+    mycursor2.execute(f"delete from blood_donor where Aadhar_id='{del_aad}'")
+    mydb2.commit()
+    print("record deleted")
+
+
+def blood_matching():
+    reg=int(input("enter your registration number"))
+    mycursor2.execute(f"select blood_grp from blood_receiver where Reg_no={reg}")
+    bg1=mycursor2.fetchall()
+
+
+    if bg1[0][0].upper()=="A+":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor where Blood_grp in ('a+','A+','a-','A-','o+','O+','o-','O-')")
+        a=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in a:
+            
+            print(line)
+
+
+    elif bg1[0][0].upper()=="A-":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor where blood_grp in ('a-','A-','o-','O-')")
+        b=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in b:
+            print(line)
+
+    elif bg1[0][0].upper()=="B+":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor where blood_grp in ('b+','B+','b-','B-','o+','O+','o-','O-')")
+        c=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in c:
+            print(line)
+
+    elif bg1[0][0].upper()=="B-":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor where blood_grp in ('b-','B-','o-','O-')")
+        d=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in d:
+            print(line)
+
+
+    elif bg1[0][0].upper()=="AB+":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor")
+        e=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in e:
+            print(line)
+
+    elif bg1[0][0].upper()=="AB-":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor where blood_grp in ('a-','A-','o-','O-','b-','B-','ab-','AB-')")
+        f=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in f:
+            print(line)
+
+
+    elif bg1[0][0].upper()=="O-":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor where blood_grp in ('o-','O-')")
+        g=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in g:
+            print(line)
+
+
+    elif bg1[0][0].upper()=="O+":
+        mycursor2.execute("select Reg_no,Name,Age from blood_donor where blood_grp in ['o+','O+','o-','O-']")
+        h=mycursor2.fetchall()
+        print("Here is a list of the compatible pairs")
+        for line in h:
+            print(line)
+
+    ch=input("do you want to continue?")
+    if ch in "noNONo":
+        print("thankyou!!")
+        #return
+        menudrive()
+    else:
+        blood_matching()
+
+
+def blood__receiver_updation():
+    upd_reg_no=int(input('enter your registration number for updation of data:'))
+    new_data=int(input('enter new data(you can only update your age):'))
+    mycursor2.execute(f"update blood_receiver set Age={new_data} where Reg_no={upd_reg_no}")
+    mydb2.commit()
+    print("age updated successfully")
+
+def blood_receiver_deletion():
+    del_reg=int(input('enter the register number of the record to be deleted:'))
+    del_aad=input('enter the aadhar number:')
+    #query="delete from blood_donor where Aadhar_id=del_aad"
+    mycursor2.execute(f"delete from blood_receiver where Aadhar_id='{del_aad}'")
+    mydb2.commit()
+    print("record deleted")
+
+
+def breakout():
+    #while True:
+    print("**************************************")
+        #break
+    return
+    
+
+def menudrive():
+    print("1.enter the site")
+    print("2.exit the site")
+    choi=int(input("enter your choice"))
+    if choi==1:
+        ch=input("enter your category(blood/organ):")
+        if ch.lower()=="blood":
+            dr=input("donor or receiver?(d/r)")
+            if dr.lower()=="d":
+                while True:
+                    print("1. Registration")
+                    print("2. Delete your data")
+                    print("3. Change your existing information")
+                    print("4. See demographic trends")
+                    #print("4.Exit from the program")
+                    opt=int(input("enter your choice:"))
+                    if opt==1:
+                            blood_donor_data_collection()
+                            menudrive()
+                    elif opt==2:
+                            blood_donor_deletion()
+                            menudrive()
+                    elif opt==3:
+                            blood_donor_updation()
+                            menudrive()
+                    elif opt==4:
+                        blood_search()
+                        menudrive()
+                    else:
+                        print("invalid choice!!")
+                        menudriven()
+                    
+
+            elif dr.lower()=="r":
+                while True:
+                    print("1.Registration")
+                    print("2.Access information regarding availablity of various blood groups")
+                    print("3.update your existing details")
+                    print("4.Delete your data")
+                    print("5.Finding your match")
+                    print("6.See demographic trends")
+                    opt=int(input("enter your choice:"))
+                    if opt==1:
+                        blood_reciever_data_collection()
+                        menudrive()
+                    elif opt==2:
+                        blood_access_information()
+                        menudrive()
+                    elif opt==3:
+                        blood__receiver_updation()
+                        menudrive()
+                    elif opt==4:
+                        blood_receiver_deletion()
+                        menudrive()
+                    elif opt==5:
+                        blood_matching()
+                        menudrive()
+                    elif opt==6:
+                        blood_search()
+                        menudrive()
+                    else:
+                        print("invalid choice!!")
+                        menudriven()
+                    
+
+
+        if ch.lower()=="organ":
+            dr=input("donor or receiver?(d/r)")
+            if dr.lower()=="d":
+                while True:
+                    print("1. Registration")
+                    print("2. Delete your data")
+                    print("3. Change your existing information")
+                    print("4. See demographic trends")
+                    opt=int(input("enter your choice:"))
+                    if opt==1:
+                        org_donor_data_collection()
+                        menudrive()
+                    elif opt==2:
+                        org_donor_deletion()
+                        menudrive()
+                    elif opt==3:
+                        organ_donor_updation()
+                        menudrive()
+                    elif opt==4:
+                        organ_search()
+                        menudrive()
+                    else:
+                        print("invalid choice!!")
+                        menudriven()
+                    
+
+                        
+            elif dr.lower()=="r":
+                while True:
+                    print("1.Registration")
+                    print("2.Access information regarding availablity of various organs")
+                    print("3.update your existing details")
+                    print("4.Delete your data")
+                    print("5.Finding your match")
+                    print("6.See demographic trends") 
+                    #print("6.Quit from the program")
+                    opt=int(input("enter your choice:"))
+                    if opt==1:
+                        org_reciever_data_collection()
+                        menudrive()
+                    elif opt==2:
+                        org_access_information()
+                        menudrive()
+                    elif opt==3:
+                        organ_receiver_updation()
+                        menudrive()
+                    elif opt==4:
+                        org_receiver_deletion()
+                        menudrive()
+                    elif opt==5:
+                        org_matching()
+                        menudrive()
+                    elif opt==6:
+                        organ_search()
+                        menudrive()
+                    else:
+                        print("invalid choice!!")
+                        menudriven()
+                    
+    elif choi==2:
+        print("THANKYOU FOR VISITING OUR SITE")
+        breakout()
+        #return
+    else:
+        print("invalid choice")
+        menudriven()
+        
+menudrive()
